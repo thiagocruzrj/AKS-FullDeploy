@@ -131,3 +131,40 @@ resource "azurerm_application_gateway" "appgw" {
     backend_http_settings_name = "http-setting-name"
   }
 }
+
+resource "azurerm_application_insights" "aksainsights" {
+  name                = "${var.dns_prefix}-${random_integer.random_int.result}-ai"
+  application_type    = "Node.JS"
+  location            = "West Europe"
+  resource_group_name = azurerm_resource_group.aksrg.name
+
+  tags = {
+    environment = var.environment
+    project     = "azbgaks"
+  }
+}
+
+resource "azurerm_log_analytics_workspace" "akslogs" {
+  name                = "${var.dns_prefix}-${random_integer.random_int.result}-lga"
+  location            = azurerm_resource_group.aksrg.location
+  resource_group_name = azurerm_resource_group.aksrg.name
+  sku                 = "PerGB2018"
+
+  tags = {
+    environment = var.environment
+    project     = "azbgaks"
+  }
+}
+
+resource "azurerm_log_analytics_solution" "akslogs" {
+  solution_name         = "ContainerInsights"
+  location              = azurerm_resource_group.aksrg.location
+  resource_group_name   = azurerm_resource_group.aksrg.name
+  workspace_resource_id = azurerm_log_analytics_workspace.akslogs.id
+  workspace_name        = azurerm_log_analytics_workspace.akslogs.name
+
+  plan {
+    publisher = "Microsoft"
+    product   = "OMSGallery/ContainerInsights"
+  }
+}
