@@ -8,7 +8,7 @@ resource "azurerm_redis_cache" "aksredis" {
   enable_non_ssl_port = true
   redis_configuration {
   }
-  
+
   tags = {
     environment = var.environment
     project     = "azbgaks"

@@ -1,58 +1,58 @@
 resource "azurerm_resource_group" "aksrg" {
-  name = "${var.resource_group_name}-${random_integer.random_int.result}"
+  name     = "${var.resource_group_name}-${random_integer.random_int.result}"
   location = var.location
 
   tags = {
     environment = var.environment
-    project = "azbgaks"
+    project     = "azbgaks"
   }
 }
 
 resource "azurerm_virtual_network" "kubevnet" {
-  name = "${var.dns_prefix}-${random_integer.random_int.result}-vnet"
-  address_space = ["10.0.0.0/20"]
-  location = azurerm_resource_group.aksrg.location
+  name                = "${var.dns_prefix}-${random_integer.random_int.result}-vnet"
+  address_space       = ["10.0.0.0/20"]
+  location            = azurerm_resource_group.aksrg.location
   resource_group_name = azurerm_container_registry.aksrg.name
 
   tags = {
     environment = var.environment
-    project = "azbgaks"
+    project     = "azbgaks"
   }
 }
 
 resource "azurerm_subnet" "gwnet" {
-  name                      = "gw-1-subnet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
-  address_prefix            = "10.0.1.0/24"
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  name                 = "gw-1-subnet"
+  resource_group_name  = azurerm_resource_group.aksrg.name
+  address_prefix       = "10.0.1.0/24"
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_subnet" "acinet" {
-  name                      = "aci-2-subnet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
-  address_prefix            = "10.0.2.0/24"
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  name                 = "aci-2-subnet"
+  resource_group_name  = azurerm_resource_group.aksrg.name
+  address_prefix       = "10.0.2.0/24"
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_subnet" "fwnet" {
-  name                      = "AzureFirewallSubnet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
-  address_prefix            = "10.0.6.0/24"
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  name                 = "AzureFirewallSubnet"
+  resource_group_name  = azurerm_resource_group.aksrg.name
+  address_prefix       = "10.0.6.0/24"
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_subnet" "ingnet" {
-  name                      = "ing-4-subnet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
-  address_prefix            = "10.0.4.0/24"
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  name                 = "ing-4-subnet"
+  resource_group_name  = azurerm_resource_group.aksrg.name
+  address_prefix       = "10.0.4.0/24"
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_subnet" "aksnet" {
-  name                      = "aks-5-subnet"
-  resource_group_name       = azurerm_resource_group.aksrg.name
-  address_prefix            = "10.0.5.0/24"
-  virtual_network_name      = azurerm_virtual_network.kubevnet.name
+  name                 = "aks-5-subnet"
+  resource_group_name  = azurerm_resource_group.aksrg.name
+  address_prefix       = "10.0.5.0/24"
+  virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_public_ip" "appgw_ip" {
@@ -68,8 +68,8 @@ resource "azurerm_application_gateway" "appgw" {
   location            = azurerm_resource_group.aksrg.location
 
   sku {
-    name = "Standard_Small"
-    tier = "Standard"
+    name     = "Standard_Small"
+    tier     = "Standard"
     capacity = 2
   }
 
@@ -89,7 +89,7 @@ resource "azurerm_application_gateway" "appgw" {
   }
 
   backend_address_pool {
-    name = "backend-pool-name"
+    name  = "backend-pool-name"
     fqdns = ["${azurerm_public_ip.nginx_ingress.ip_address}.xip.io", "${azurerm_public_ip.nginx_ingress-stage.ip_address}.xip.io"]
   }
 
@@ -101,7 +101,7 @@ resource "azurerm_application_gateway" "appgw" {
     protocol              = "Http"
     request_timeout       = 1
     connection_draining {
-      enabled = true
+      enabled           = true
       drain_timeout_sec = 30
     }
   }
