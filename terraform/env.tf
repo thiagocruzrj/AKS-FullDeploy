@@ -12,7 +12,7 @@ resource "azurerm_virtual_network" "kubevnet" {
   name                = "${var.dns_prefix}-${random_integer.random_int.result}-vnet"
   address_space       = ["10.0.0.0/20"]
   location            = azurerm_resource_group.aksrg.location
-  resource_group_name = azurerm_container_registry.aksrg.name
+  resource_group_name = azurerm_resource_group.aksrg.name
 
   tags = {
     environment = var.environment
@@ -23,35 +23,35 @@ resource "azurerm_virtual_network" "kubevnet" {
 resource "azurerm_subnet" "gwnet" {
   name                 = "gw-1-subnet"
   resource_group_name  = azurerm_resource_group.aksrg.name
-  address_prefix       = "10.0.1.0/24"
+  address_prefixes     = ["10.0.1.0/24"]
   virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_subnet" "acinet" {
   name                 = "aci-2-subnet"
   resource_group_name  = azurerm_resource_group.aksrg.name
-  address_prefix       = "10.0.2.0/24"
+  address_prefixes     = ["10.0.2.0/24"]
   virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_subnet" "fwnet" {
   name                 = "AzureFirewallSubnet"
   resource_group_name  = azurerm_resource_group.aksrg.name
-  address_prefix       = "10.0.6.0/24"
+  address_prefixes     = ["10.0.6.0/24"]
   virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_subnet" "ingnet" {
   name                 = "ing-4-subnet"
   resource_group_name  = azurerm_resource_group.aksrg.name
-  address_prefix       = "10.0.4.0/24"
+  address_prefixes     = ["10.0.4.0/24"]
   virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
 resource "azurerm_subnet" "aksnet" {
   name                 = "aks-5-subnet"
   resource_group_name  = azurerm_resource_group.aksrg.name
-  address_prefix       = "10.0.5.0/24"
+  address_prefixes     = ["10.0.5.0/24"]
   virtual_network_name = azurerm_virtual_network.kubevnet.name
 }
 
@@ -170,13 +170,13 @@ resource "azurerm_log_analytics_solution" "akslogs" {
 }
 
 resource "azurerm_kubernetes_cluster" "akstf" {
-  name                 = "${var.dns_prefix}-${random_integer.random_int.result}"
-  location             = azurerm_resource_group.aksrg.location
-  resource_group_name  = azurerm_resource_group.aksrg.name
-  dns_prefix           = var.dns_prefix
-  kubernetes_version   = var.kubernetes_version
-  private_link_enabled = true
-  node_resource_group  = "${azurerm_resource_group.aksrg.name}_nodes_${azurerm_resource_group.aksrg.location}"
+  name                    = "${var.dns_prefix}-${random_integer.random_int.result}"
+  location                = azurerm_resource_group.aksrg.location
+  resource_group_name     = azurerm_resource_group.aksrg.name
+  dns_prefix              = var.dns_prefix
+  kubernetes_version      = var.kubernetes_version
+  private_cluster_enabled = true
+  node_resource_group     = "${azurerm_resource_group.aksrg.name}_nodes_${azurerm_resource_group.aksrg.location}"
   linux_profile {
     admin_username = "phoenix"
 
@@ -207,18 +207,7 @@ resource "azurerm_kubernetes_cluster" "akstf" {
   }
 
   identity {
-    type = SystemAssigned
-  }
-
-  addon_profile {
-    oms_agent {
-      enabled                    = true
-      log_analytics_workspace_id = azurerm_log_analytics_workspace.akslogs.id
-    }
-
-    kube_dashboard {
-      enabled = true
-    }
+    type = "SystemAssigned"
   }
 
   tags = {
@@ -228,6 +217,18 @@ resource "azurerm_kubernetes_cluster" "akstf" {
 }
 
 # Create Static Public IP Address to be used by Nginx Ingress
+resource "azurerm_public_ip" "nginx_ingress" {
+  name                = "nginx-ingress-pip"
+  location            = azurerm_kubernetes_cluster.akstf.location
+  resource_group_name = azurerm_kubernetes_cluster.akstf.node_resource_group
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  domain_name_label   = "${var.dns_prefix}-${random_integer.random_int.result}"
+
+  depends_on = [azurerm_kubernetes_cluster.akstf]
+}
+
+
 resource "azurerm_public_ip" "nginx_ingress-stage" {
   name                = "nginx-ingress-pip-stage"
   location            = azurerm_kubernetes_cluster.akstf.location
@@ -255,7 +256,6 @@ provider "kubernetes" {
 # https://www.terraform.io/docs/providers/helm/index.html
 provider "helm" {
   kubernetes {
-    load_config_file       = false
     host                   = azurerm_kubernetes_cluster.akstf.kube_config.0.host
     client_certificate     = base64decode(azurerm_kubernetes_cluster.akstf.kube_config.0.client_certificate)
     client_key             = base64decode(azurerm_kubernetes_cluster.akstf.kube_config.0.client_key)
@@ -264,17 +264,11 @@ provider "helm" {
   }
 }
 
-# https://www.terraform.io/docs/providers/helm/repository.html
-data "helm_repository" "stable" {
-  name = "stable"
-  url  = "https://kubernetes-charts.storage.googleapis.com"
-}
-
 # Install Nginx Ingress using Helm Chart
 # https://www.terraform.io/docs/providers/helm/release.html
 resource "helm_release" "nginx_ingress" {
   name         = "nginx-ingress"
-  repository   = data.helm_repository.stable.metadata.0.name
+  repository   = "https://kubernetes-charts.storage.googleapis.com"
   chart        = "nginx-ingress"
   namespace    = "nginx"
   force_update = "true"

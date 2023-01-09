@@ -19,7 +19,7 @@ resource "azurerm_key_vault_access_policy" "aksvault_policy_app" {
   tenant_id = var.tenant_id
   object_id = var.azdo_service_principal_objectid
 
-  secret_permissions = ["get"]
+  secret_permissions = ["Get"]
 }
 
 resource "azurerm_key_vault_access_policy" "aksvault_policy_forme" {
@@ -29,9 +29,9 @@ resource "azurerm_key_vault_access_policy" "aksvault_policy_forme" {
   object_id = var.object_id
 
   secret_permissions = [
-    "get",
-    "list",
-    "set"
+    "Get",
+    "List",
+    "Set"
   ]
 }
 
