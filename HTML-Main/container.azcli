@@ -24,3 +24,6 @@ docker container ls
 
 # Stopping Docker Run
 docker stop 0ddfbed4c41f
+
+# CD webhook
+https://$appservicescontainer:jShGJlasYvnREEhq2hrv8YtW12922HGJA7561PCvuiwlaxfiilN12JravQpp@appservicescontainer.scm.azurewebsites.net/api/registry/webhook
