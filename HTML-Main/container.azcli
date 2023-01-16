@@ -1,0 +1,26 @@
+# Azure Login
+az login
+
+# Building the image locally
+docker build -t site-html .
+
+# Login into ACR
+az acr login --name acrakscontainers
+
+# Tagging the local image
+docker tag site-html acrakscontainers.azurecr.io/site-html
+
+# Pushing to ACR
+docker push acrakscontainers.azurecr.io/site-html
+
+# Pulling from ACR to Local Machine
+docker pull acrakscontainers.azurecr.io/site-html
+
+# Running the ACR image
+docker run -d -p 8880:80 acrakscontainers.azurecr.io/site-html
+
+# Listing local containers
+docker container ls
+
+# Stopping Docker Run
+docker stop 0ddfbed4c41f
