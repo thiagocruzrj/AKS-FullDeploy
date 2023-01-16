@@ -1,0 +1,28 @@
+# Login on Azure
+az login
+
+# Variables
+rg=rg-containers
+local=eastus
+acr=acrakscontainers
+
+# Creating Resource Group
+az group create -n $rg -l $local
+
+# Check if the ACR name is already used
+az acr check-name -n $acr
+
+# Creating ACR
+az acr create -n $acr -g $rg --sku Basic
+
+# Show endpoint
+az acr show-endpoints -n $acr
+
+# Enabling the ACR adm account
+az acr update -n $acr --admin-enabled true
+
+# Listing ACRs
+az acr list -o table
+
+# ACR detials
+az acr show -n $acr
