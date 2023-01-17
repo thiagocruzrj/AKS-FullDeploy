@@ -1,0 +1,22 @@
+# Login on Azure
+az login
+
+# Parameters
+rg=rg-aks-acr
+local=eastus
+acr=acrakscli
+
+# Create Resource Group
+az group create -n $rg -l $local
+
+# Create AKS cluster
+az aks create -n $aks -g $rg
+
+# Create ACR
+az acr create -n $acr -g $rg --sku Basic
+
+# Verifying if the ACR is accessible to the AKS cluster
+az aks check-acr -n $aks -g $rg --acr $acr.azurerc.io
+
+# Attach the ACR to cluster AKS
+az aks update -g $rg -n $aks --attach-acr $acr
